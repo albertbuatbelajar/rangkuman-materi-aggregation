@@ -1,2 +1,270 @@
-# rangkuman-materi-aggregation
+# Rangkuman Materi: MongoDB Aggregation Pipeline
 
+Nama   : Reynara Albert Pradana  
+Kelas  : 2AIDA2  
+Materi : Aggregation Pipeline — `$match`, `$group`, `$project`
+
+---
+
+## ⚙️ Persiapan
+
+### Connect ke Atlas
+```bash
+mongosh "mongodb+srv://reynaraalbertpradana.zhgdmo4.mongodb.net/" --apiVersion 1 --username reynaraalbert
+```
+
+### Buat Database & Insert Data
+```javascript
+use latihanAggregation
+
+db.inventories.insertMany([
+  {
+    name: "iPhone 13 Pro",
+    category: "Smartphone",
+    stock: 25,
+    price: 17999000,
+    company: "Apple Inc.",
+    created_at: "2023-02-01T09:15:00Z",
+    updated_at: "2023-06-18T14:45:00Z",
+    deleted_at: null
+  },
+  {
+    name: "Samsung Galaxy S21",
+    category: "Smartphone",
+    stock: 20,
+    price: 12999000,
+    company: "PT Samsung Electronics Indonesia",
+    created_at: "2023-02-05T10:00:00Z",
+    updated_at: "2023-06-19T11:30:00Z",
+    deleted_at: null
+  },
+  {
+    name: "Xiaomi Mi 11",
+    category: "Smartphone",
+    stock: 30,
+    price: 9999000,
+    company: "PT Xiaomi Communications Indonesia",
+    created_at: "2023-02-10T14:30:00Z",
+    updated_at: "2023-06-20T16:45:00Z",
+    deleted_at: null
+  },
+  {
+    name: "Google Pixel 6",
+    category: "Smartphone",
+    stock: 15,
+    price: 10999000,
+    company: "Google LLC",
+    created_at: "2023-02-15T09:45:00Z",
+    updated_at: "2023-06-21T13:20:00Z",
+    deleted_at: null
+  },
+  {
+    name: "OnePlus 9 Pro",
+    category: "Smartphone",
+    stock: 18,
+    price: 11999000,
+    company: "OnePlus Technology",
+    created_at: "2023-02-20T11:15:00Z",
+    updated_at: "2023-06-22T15:10:00Z",
+    deleted_at: null
+  }
+])
+```
+
+### Cek Data
+```javascript
+db.inventories.find()
+```
+
+---
+
+## 1️⃣ `$match` — Filter Dokumen
+
+> `$match` berfungsi untuk menyaring dokumen berdasarkan kondisi tertentu.  
+> Cara kerjanya sama seperti `WHERE` pada SQL.
+
+Sintaks:
+```javascript
+{ $match: { field: kondisi } }
+```
+
+Contoh — Tampilkan smartphone dengan stok lebih dari 18:
+```javascript
+db.inventories.aggregate([
+  { $match: { category: "Smartphone", stock: { $gt: 18 } } }
+])
+```
+
+Output:
+```
+{ name: 'iPhone 13 Pro',      category: 'Smartphone', stock: 25, price: 17999000, company: 'Apple Inc.' }
+{ name: 'Samsung Galaxy S21', category: 'Smartphone', stock: 20, price: 12999000, company: 'PT Samsung Electronics Indonesia' }
+{ name: 'Xiaomi Mi 11',       category: 'Smartphone', stock: 30, price: 9999000,  company: 'PT Xiaomi Communications Indonesia' }
+```
+
+Result: Hanya dokumen dengan `stock > 18` pada kategori Smartphone yang muncul. ✅
+
+---
+
+## 2️⃣ `$group` — Kelompokkan & Agregasi Data
+
+> `$group` berfungsi untuk **mengelompokkan dokumen** berdasarkan field tertentu  
+> dan menghitung nilai agregasi seperti jumlah, rata-rata, atau total.  
+> Cara kerjanya sama seperti `GROUP BY` pada SQL.
+
+Sintaks:
+```javascript
+{
+  $group: {
+    _id: "$fieldPengelompokan",
+    namaHasil: { $operator: "$field" }
+  }
+}
+```
+
+Operator yang sering digunakan:
+
+| Operator | Fungsi |
+|----------|--------|
+| `$sum`   | Menjumlahkan nilai |
+| `$avg`   | Menghitung rata-rata |
+| `$push`  | Mengumpulkan nilai ke dalam array |
+| `$max`   | Mengambil nilai tertinggi |
+| `$min`   | Mengambil nilai terendah |
+
+Contoh — Hitung total stok, harga tertinggi, harga terendah, dan rata-rata harga per kategori:
+```javascript
+db.inventories.aggregate([
+  {
+    $group: {
+      _id: "$category",
+      totalStok: { $sum: "$stock" },
+      hargaTertinggi: { $max: "$price" },
+      hargaTerendah: { $min: "$price" },
+      rataRataHarga: { $avg: "$price" },
+      daftarProduk: { $push: "$name" }
+    }
+  }
+])
+```
+
+Output:
+```
+{
+  _id: 'Smartphone',
+  totalStok: 108,
+  hargaTertinggi: 17999000,
+  hargaTerendah: 9999000,
+  rataRataHarga: 12799000,
+  daftarProduk: ['iPhone 13 Pro', 'Samsung Galaxy S21', 'Xiaomi Mi 11', 'Google Pixel 6', 'OnePlus 9 Pro']
+}
+```
+
+Result: Seluruh produk Smartphone berhasil dikelompokkan beserta statistik harga dan stoknya. ✅
+
+---
+
+## 3️⃣ `$project` — Pilih Field yang Ditampilkan
+
+> `$project` berfungsi untuk **memilih, menyembunyikan, atau mengubah nama field**  
+> dari hasil query. Cara kerjanya sama seperti `SELECT` pada SQL.
+
+Sintaks:
+```javascript
+{
+  $project: {
+    namaField: 1,            // 1 = tampilkan
+    namaField: 0,            // 0 = sembunyikan
+    fieldBaru: "$fieldLama"  // rename / ambil dari field lain
+  }
+}
+```
+
+Contoh — Tampilkan hanya nama produk, stok, dan harga. Sembunyikan `_id`, `created_at`, `updated_at`, dan `deleted_at`:
+```javascript
+db.inventories.aggregate([
+  { $match: { category: "Smartphone" } },
+  {
+    $project: {
+      _id: 0,
+      produk: "$name",
+      harga: "$price",
+      stok: 1
+    }
+  }
+])
+```
+
+Output:
+```
+{ stok: 25, produk: 'iPhone 13 Pro',      harga: 17999000 }
+{ stok: 20, produk: 'Samsung Galaxy S21', harga: 12999000 }
+{ stok: 30, produk: 'Xiaomi Mi 11',       harga: 9999000  }
+{ stok: 15, produk: 'Google Pixel 6',     harga: 10999000 }
+{ stok: 18, produk: 'OnePlus 9 Pro',      harga: 11999000 }
+```
+
+Result: Field `name` berhasil di-rename menjadi `produk`, dan field yang tidak diperlukan berhasil disembunyikan. ✅
+
+---
+
+## 🔁 Gabungan Ketiga Stage
+
+> Pipeline bisa digabung — output satu stage menjadi input stage berikutnya.
+
+Contoh — Filter → Kelompokkan → Tampilkan field pilihan:
+```javascript
+db.inventories.aggregate([
+  // Stage 1: Filter hanya kategori Smartphone dengan stok tersedia
+  { $match: { category: "Smartphone", stock: { $gt: 0 } } },
+
+  // Stage 2: Kelompokkan berdasarkan kategori dan hitung statistik
+  {
+    $group: {
+      _id: "$category",
+      jumlahProduk: { $sum: 1 },
+      totalStok: { $sum: "$stock" },
+      rataRataHarga: { $avg: "$price" }
+    }
+  },
+
+  // Stage 3: Tampilkan field yang dibutuhkan saja
+  {
+    $project: {
+      _id: 0,
+      kategori: "$_id",
+      jumlahProduk: 1,
+      totalStok: 1,
+      rataRataHarga: 1
+    }
+  }
+])
+```
+
+Output:
+```
+{
+  jumlahProduk: 5,
+  totalStok: 108,
+  rataRataHarga: 12799000,
+  kategori: 'Smartphone'
+}
+```
+
+Result: Ketiga stage berjalan berurutan dan menghasilkan ringkasan data yang bersih. ✅
+
+---
+
+## 📝 Kesimpulan
+
+| Stage      | Fungsi                                      | SQL Setara  |
+|------------|---------------------------------------------|-------------|
+| `$match`   | Menyaring dokumen berdasarkan kondisi       | `WHERE`     |
+| `$group`   | Mengelompokkan & menghitung agregasi data   | `GROUP BY`  |
+| `$project` | Memilih / menyembunyikan / rename field     | `SELECT`    |
+
+> Data mengalir dari atas ke bawah — setiap stage memproses hasil dari stage sebelumnya.
+
+---
+
+Rangkuman Materi Aggregate - Karena telat.
