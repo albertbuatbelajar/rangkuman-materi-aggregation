@@ -6,6 +6,12 @@ Materi : Aggregation Pipeline — `$match`, `$group`, `$project`
 
 ---
 
+# Abstract
+Dokumen ini merupakan rangkuman materi praktikum Aggregation Pipeline pada MongoDB, yang mencakup tiga stage utama: `match‘,‘match`, `
+match‘,‘group`, dan `$project`. Ketiga stage ini memungkinkan pemrosesan data secara bertahap, di mana output satu stage menjadi input bagi stage berikutnya.
+$match berfungsi menyaring dokumen berdasarkan kondisi tertentu, setara dengan klausa WHERE pada SQL. $group digunakan untuk mengelompokkan dokumen dan menghitung nilai agregasi seperti total, rata-rata, nilai tertinggi, dan terendah — setara dengan GROUP BY. Sementara $project berperan dalam memilih, menyembunyikan, atau mengubah nama field pada hasil query, layaknya SELECT dalam SQL.
+Praktikum dilakukan menggunakan dataset koleksi inventories berisi lima produk smartphone pada database latihanAggregation yang terhubung melalui MongoDB Atlas. Hasil akhir menunjukkan bahwa kombinasi ketiga stage tersebut mampu menghasilkan ringkasan data yang terstruktur dan efisien dari dataset mentah.
+
 ## ⚙️ Persiapan
 
 ### Connect ke Atlas
